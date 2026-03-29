@@ -1,0 +1,90 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:wght@300;400;500;600;700;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* Biology dark theme — deep forest green + bioluminescent teal */
+    --background: 0.12 0.032 145;
+    --foreground: 0.93 0.018 145;
+    --card: 0.155 0.028 145;
+    --card-foreground: 0.93 0.018 145;
+    --popover: 0.18 0.026 145;
+    --popover-foreground: 0.93 0.018 145;
+    --primary: 0.73 0.18 192;
+    --primary-foreground: 0.08 0.01 145;
+    --secondary: 0.19 0.024 145;
+    --secondary-foreground: 0.88 0.018 145;
+    --muted: 0.185 0.02 145;
+    --muted-foreground: 0.6 0.05 145;
+    --accent: 0.74 0.14 80;
+    --accent-foreground: 0.1 0.01 80;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.24 0.024 145;
+    --input: 0.22 0.022 145;
+    --ring: 0.73 0.18 192;
+    --nav: 0.09 0.03 145;
+    --chart-1: 0.73 0.18 192;
+    --chart-2: 0.74 0.14 80;
+    --chart-3: 0.65 0.18 145;
+    --chart-4: 0.6 0.22 165;
+    --chart-5: 0.68 0.2 110;
+    --sidebar: 0.155 0.028 145;
+    --sidebar-foreground: 0.93 0.018 145;
+    --sidebar-primary: 0.73 0.18 192;
+    --sidebar-primary-foreground: 0.08 0.01 145;
+    --sidebar-accent: 0.19 0.024 145;
+    --sidebar-accent-foreground: 0.88 0.018 145;
+    --sidebar-border: 0.24 0.024 145;
+    --sidebar-ring: 0.73 0.18 192;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Figtree", system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(var(--border));
+    border-radius: 3px;
+  }
+}
+
+/* Smart Board Mode */
+[data-smartboard="true"] {
+  font-size: 1.15rem;
+}
+[data-smartboard="true"] button {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+[data-smartboard="true"] .smartboard-viewer {
+  min-height: 65vh !important;
+}
