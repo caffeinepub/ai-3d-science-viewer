@@ -1,3 +1,4 @@
+import Anatome3DViewer from "@/components/Anatome3DViewer";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
@@ -523,6 +524,7 @@ const SYSTEM_TABS = [
   { value: "skeletal", label: "Skeletal", emoji: "🦴" },
   { value: "muscular", label: "Muscular", emoji: "💪" },
   { value: "cellular", label: "Cellular", emoji: "🔬" },
+  { value: "anatome3d", label: "Full Body 3D", emoji: "🧬" },
 ];
 
 const ORGAN_LABELS: Record<string, { bonds: string[]; components: string[] }> =
@@ -989,221 +991,232 @@ export default function HumanAnatomyViewer() {
       </div>
 
       {/* Right: 3D Viewer */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        {selectedItem && (
-          <div
-            className="shrink-0 px-4 py-2.5 border-b flex items-center justify-between"
-            style={{
-              borderColor: "oklch(0.24 0.024 145)",
-              background: "oklch(0.13 0.03 145)",
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ background: selectedItem.color }}
-              />
-              <span
-                className="font-semibold text-sm"
-                style={{ color: "oklch(0.93 0.018 145)" }}
-              >
-                {selectedItem.name}
-              </span>
-              <Badge
-                className="text-[10px] font-mono"
-                style={{
-                  background: `${selectedItem.color}20`,
-                  color: selectedItem.color,
-                  borderColor: `${selectedItem.color}40`,
-                }}
-                variant="outline"
-              >
-                PDB: {selectedItem.pdbId}
-              </Badge>
-            </div>
-            <button
-              type="button"
-              className="text-xs px-3 py-1 rounded-lg transition-colors"
+      {activeSystem === "anatome3d" ? (
+        <div className="flex-1 overflow-hidden">
+          <Anatome3DViewer />
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          {selectedItem && (
+            <div
+              className="shrink-0 px-4 py-2.5 border-b flex items-center justify-between"
               style={{
-                background: showLabels
-                  ? "oklch(0.73 0.18 192 / 0.2)"
-                  : "oklch(0.18 0.02 145)",
-                color: showLabels
-                  ? "oklch(0.73 0.18 192)"
-                  : "oklch(0.6 0.04 145)",
-                border: `1px solid ${showLabels ? "oklch(0.73 0.18 192 / 0.4)" : "oklch(0.24 0.024 145)"}`,
+                borderColor: "oklch(0.24 0.024 145)",
+                background: "oklch(0.13 0.03 145)",
               }}
-              onClick={() => {
-                const next = !showLabels;
-                setShowLabels(next);
-                if (selectedItem) loadPDB(selectedItem);
-              }}
-              data-ocid="anatomy.labels.toggle"
             >
-              🏷️ {showLabels ? "Labels ON" : "Labels OFF"}
-            </button>
-          </div>
-        )}
-
-        {/* 3D Viewer canvas */}
-        <div className="flex-1 relative" style={{ background: "#0a150a" }}>
-          <div
-            ref={viewerRef}
-            style={{ width: "100%", height: "100%" }}
-            data-ocid="anatomy.viewer.canvas_target"
-          />
-
-          {/* Loading */}
-          <AnimatePresence>
-            {isLoading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
-                style={{ background: "rgba(10,21,10,0.85)" }}
-                data-ocid="anatomy.viewer.loading_state"
-              >
-                <Loader2
-                  className="w-10 h-10 animate-spin"
-                  style={{ color: "oklch(0.73 0.18 192)" }}
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-full"
+                  style={{ background: selectedItem.color }}
                 />
-                <p
-                  className="text-sm font-semibold"
+                <span
+                  className="font-semibold text-sm"
                   style={{ color: "oklch(0.93 0.018 145)" }}
                 >
-                  Loading {selectedItem?.name}…
-                </p>
-                <p className="text-xs" style={{ color: "oklch(0.6 0.05 145)" }}>
-                  PDB: {selectedItem?.pdbId}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Error */}
-          <AnimatePresence>
-            {loadError && !isLoading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs px-4 py-2 rounded-lg"
-                style={{
-                  background: "oklch(0.577 0.245 27.325 / 0.2)",
-                  border: "1px solid oklch(0.577 0.245 27.325 / 0.4)",
-                  color: "oklch(0.93 0.018 145)",
-                }}
-                data-ocid="anatomy.viewer.error_state"
-              >
-                {loadError}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Info overlay (when structure loaded) */}
-          {selectedItem && !isLoading && (
-            <motion.div
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="absolute top-3 right-3 w-64 rounded-xl border overflow-hidden z-10"
-              style={{
-                background: "rgba(10,21,10,0.9)",
-                borderColor: "oklch(0.24 0.024 145)",
-              }}
-            >
-              <div
-                className="px-3 py-2 border-b"
-                style={{
-                  borderColor: "oklch(0.24 0.024 145)",
-                  background: `${selectedItem.color}18`,
-                }}
-              >
-                <p
-                  className="text-[10px] uppercase tracking-widest font-bold"
-                  style={{ color: selectedItem.color }}
-                >
                   {selectedItem.name}
-                </p>
-                <p
-                  className="text-[10px] mt-0.5"
-                  style={{ color: "oklch(0.7 0.04 145)" }}
+                </span>
+                <Badge
+                  className="text-[10px] font-mono"
+                  style={{
+                    background: `${selectedItem.color}20`,
+                    color: selectedItem.color,
+                    borderColor: `${selectedItem.color}40`,
+                  }}
+                  variant="outline"
                 >
-                  {selectedItem.description}
-                </p>
+                  PDB: {selectedItem.pdbId}
+                </Badge>
               </div>
-              <div className="px-3 py-2">
-                <p
-                  className="text-[10px] uppercase tracking-wider mb-1"
-                  style={{ color: "oklch(0.55 0.04 145)" }}
-                >
-                  Function
-                </p>
-                <p
-                  className="text-[11px] leading-relaxed"
-                  style={{ color: "oklch(0.82 0.018 145)" }}
-                >
-                  {selectedItem.function}
-                </p>
-              </div>
-
-              {ORGAN_LABELS[selectedItem.pdbId] && (
-                <>
-                  <div className="px-3 pb-1 pt-0">
-                    <p
-                      className="text-[10px] uppercase tracking-wider mb-1.5"
-                      style={{ color: "oklch(0.55 0.04 145)" }}
-                    >
-                      Molecular Bonds
-                    </p>
-                    <div className="flex flex-col gap-1">
-                      {ORGAN_LABELS[selectedItem.pdbId].bonds.map((b) => (
-                        <div key={b} className="flex items-center gap-1.5">
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ background: selectedItem.color }}
-                          />
-                          <span
-                            className="text-[10px]"
-                            style={{ color: "oklch(0.75 0.02 145)" }}
-                          >
-                            {b}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="px-3 pb-2">
-                    <p
-                      className="text-[10px] uppercase tracking-wider mb-1.5 mt-1"
-                      style={{ color: "oklch(0.55 0.04 145)" }}
-                    >
-                      Key Components
-                    </p>
-                    <div className="flex flex-col gap-1">
-                      {ORGAN_LABELS[selectedItem.pdbId].components.map((c) => (
-                        <div key={c} className="flex items-center gap-1.5">
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ background: "oklch(0.73 0.18 192)" }}
-                          />
-                          <span
-                            className="text-[10px]"
-                            style={{ color: "oklch(0.75 0.02 145)" }}
-                          >
-                            {c}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </motion.div>
+              <button
+                type="button"
+                className="text-xs px-3 py-1 rounded-lg transition-colors"
+                style={{
+                  background: showLabels
+                    ? "oklch(0.73 0.18 192 / 0.2)"
+                    : "oklch(0.18 0.02 145)",
+                  color: showLabels
+                    ? "oklch(0.73 0.18 192)"
+                    : "oklch(0.6 0.04 145)",
+                  border: `1px solid ${showLabels ? "oklch(0.73 0.18 192 / 0.4)" : "oklch(0.24 0.024 145)"}`,
+                }}
+                onClick={() => {
+                  const next = !showLabels;
+                  setShowLabels(next);
+                  if (selectedItem) loadPDB(selectedItem);
+                }}
+                data-ocid="anatomy.labels.toggle"
+              >
+                🏷️ {showLabels ? "Labels ON" : "Labels OFF"}
+              </button>
+            </div>
           )}
+
+          {/* 3D Viewer canvas */}
+          <div className="flex-1 relative" style={{ background: "#0a150a" }}>
+            <div
+              ref={viewerRef}
+              style={{ width: "100%", height: "100%" }}
+              data-ocid="anatomy.viewer.canvas_target"
+            />
+
+            {/* Loading */}
+            <AnimatePresence>
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
+                  style={{ background: "rgba(10,21,10,0.85)" }}
+                  data-ocid="anatomy.viewer.loading_state"
+                >
+                  <Loader2
+                    className="w-10 h-10 animate-spin"
+                    style={{ color: "oklch(0.73 0.18 192)" }}
+                  />
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "oklch(0.93 0.018 145)" }}
+                  >
+                    Loading {selectedItem?.name}…
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: "oklch(0.6 0.05 145)" }}
+                  >
+                    PDB: {selectedItem?.pdbId}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Error */}
+            <AnimatePresence>
+              {loadError && !isLoading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs px-4 py-2 rounded-lg"
+                  style={{
+                    background: "oklch(0.577 0.245 27.325 / 0.2)",
+                    border: "1px solid oklch(0.577 0.245 27.325 / 0.4)",
+                    color: "oklch(0.93 0.018 145)",
+                  }}
+                  data-ocid="anatomy.viewer.error_state"
+                >
+                  {loadError}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Info overlay (when structure loaded) */}
+            {selectedItem && !isLoading && (
+              <motion.div
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="absolute top-3 right-3 w-64 rounded-xl border overflow-hidden z-10"
+                style={{
+                  background: "rgba(10,21,10,0.9)",
+                  borderColor: "oklch(0.24 0.024 145)",
+                }}
+              >
+                <div
+                  className="px-3 py-2 border-b"
+                  style={{
+                    borderColor: "oklch(0.24 0.024 145)",
+                    background: `${selectedItem.color}18`,
+                  }}
+                >
+                  <p
+                    className="text-[10px] uppercase tracking-widest font-bold"
+                    style={{ color: selectedItem.color }}
+                  >
+                    {selectedItem.name}
+                  </p>
+                  <p
+                    className="text-[10px] mt-0.5"
+                    style={{ color: "oklch(0.7 0.04 145)" }}
+                  >
+                    {selectedItem.description}
+                  </p>
+                </div>
+                <div className="px-3 py-2">
+                  <p
+                    className="text-[10px] uppercase tracking-wider mb-1"
+                    style={{ color: "oklch(0.55 0.04 145)" }}
+                  >
+                    Function
+                  </p>
+                  <p
+                    className="text-[11px] leading-relaxed"
+                    style={{ color: "oklch(0.82 0.018 145)" }}
+                  >
+                    {selectedItem.function}
+                  </p>
+                </div>
+
+                {ORGAN_LABELS[selectedItem.pdbId] && (
+                  <>
+                    <div className="px-3 pb-1 pt-0">
+                      <p
+                        className="text-[10px] uppercase tracking-wider mb-1.5"
+                        style={{ color: "oklch(0.55 0.04 145)" }}
+                      >
+                        Molecular Bonds
+                      </p>
+                      <div className="flex flex-col gap-1">
+                        {ORGAN_LABELS[selectedItem.pdbId].bonds.map((b) => (
+                          <div key={b} className="flex items-center gap-1.5">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ background: selectedItem.color }}
+                            />
+                            <span
+                              className="text-[10px]"
+                              style={{ color: "oklch(0.75 0.02 145)" }}
+                            >
+                              {b}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="px-3 pb-2">
+                      <p
+                        className="text-[10px] uppercase tracking-wider mb-1.5 mt-1"
+                        style={{ color: "oklch(0.55 0.04 145)" }}
+                      >
+                        Key Components
+                      </p>
+                      <div className="flex flex-col gap-1">
+                        {ORGAN_LABELS[selectedItem.pdbId].components.map(
+                          (c) => (
+                            <div key={c} className="flex items-center gap-1.5">
+                              <span
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{ background: "oklch(0.73 0.18 192)" }}
+                              />
+                              <span
+                                className="text-[10px]"
+                                style={{ color: "oklch(0.75 0.02 145)" }}
+                              >
+                                {c}
+                              </span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
