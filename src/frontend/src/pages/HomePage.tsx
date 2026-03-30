@@ -389,23 +389,6 @@ export default function HomePage({
             ))}
           </div>
         </motion.div>
-
-        {/* ── Quick action ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.48 }}
-          className="w-full"
-        >
-          <Button
-            className="w-full h-11 text-sm rounded-full gap-2"
-            onClick={() => onNavigate("#/viewer")}
-            data-ocid="home.open_viewer.button"
-          >
-            <Atom className="w-4 h-4" />
-            Open 3D Viewer
-          </Button>
-        </motion.div>
       </main>
 
       {/* ── Footer ── */}

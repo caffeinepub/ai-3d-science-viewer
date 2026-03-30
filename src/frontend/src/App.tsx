@@ -19,6 +19,7 @@ import {
   Maximize2,
   Microscope,
   Monitor,
+  Plus,
   Search,
   Send,
   Shield,
@@ -31,6 +32,11 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import LoginPage from "./LoginPage";
+import {
+  AddStructureModal,
+  type MyStructure,
+  loadMyStructures,
+} from "./components/AddStructureModal";
 import {
   ANATOMY_ID,
   CATEGORIES,
@@ -68,6 +74,63 @@ function findStructureByQuery(query: string): Structure | null {
         s.description.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q),
     ) ?? null
+  );
+}
+
+// ─── TwoDPanel ───────────────────────────────────────────────────────────────────────
+function TwoDPanel({
+  structureName,
+  onClose,
+}: { structureName: string; onClose: () => void }) {
+  const [imgError, setImgError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(structureName)}/PNG`;
+
+  return (
+    <div
+      className="w-64 shrink-0 border-l border-border flex flex-col"
+      style={{ background: "#080d1a" }}
+      data-ocid="twod.panel"
+    >
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+        <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+          2D Structure
+        </p>
+        <button
+          onClick={onClose}
+          type="button"
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          data-ocid="twod.close_button"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="flex-1 flex items-center justify-center p-3">
+        {loading && !imgError && (
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        )}
+        {imgError ? (
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">No 2D image found</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-1">
+              {structureName}
+            </p>
+          </div>
+        ) : (
+          <img
+            src={url}
+            alt={`2D structure of ${structureName}`}
+            className="max-w-full max-h-full object-contain"
+            style={{ display: loading ? "none" : "block" }}
+            onLoad={() => setLoading(false)}
+            onError={() => {
+              setImgError(true);
+              setLoading(false);
+            }}
+          />
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -129,6 +192,7 @@ export default function App() {
     useState<StructureDetails | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showLabels, setShowLabels] = useState(false);
+  const [show2DPanel, setShow2DPanel] = useState(false);
 
   // Is the human anatomy diagram active?
   const isAnatomyMode = selectedStructure?.pdbId === ANATOMY_ID;
@@ -143,6 +207,9 @@ export default function App() {
     },
   ]);
   const [chatInput, setChatInput] = useState("");
+  const [myStructures, setMyStructures] = useState<MyStructure[]>(() =>
+    loadMyStructures(),
+  );
 
   // ── Filter catalog ──────────────────────────────────────────────────────────────────
   const filteredStructures = STRUCTURES.filter((s) => {
@@ -230,6 +297,7 @@ export default function App() {
       // Anatomy mode – just set state, no PDB fetch
       if (structure.pdbId === ANATOMY_ID) {
         setSelectedStructure(structure);
+        setShow2DPanel(false);
         setLoadError(null);
         // clear any existing 3Dmol viewer
         if (viewerInstanceRef.current) {
@@ -248,6 +316,7 @@ export default function App() {
       setIsLoading(true);
       setLoadError(null);
       setSelectedStructure(structure);
+      setShow2DPanel(false);
 
       try {
         const url = `https://files.rcsb.org/view/${structure.pdbId}.pdb`;
@@ -289,6 +358,35 @@ export default function App() {
     [renderStyle, applyStyle, showLabels, addLabelsToViewer],
   );
 
+  const handleMyStructureAdd = (s: MyStructure) => {
+    setMyStructures(loadMyStructures());
+    loadStructure({
+      pdbId: s.pdbId,
+      name: s.name,
+      description: "Custom structure from RCSB",
+      category: "Molecular",
+      labels: [],
+    } as any);
+    navigate("#/viewer");
+  };
+
+  const handleMyStructureDelete = (id: string) => {
+    const updated = myStructures.filter((s) => s.id !== id);
+    localStorage.setItem("myStructures", JSON.stringify(updated));
+    setMyStructures(updated);
+  };
+
+  const handleMyStructureLoad = (s: MyStructure) => {
+    loadStructure({
+      pdbId: s.pdbId,
+      name: s.name,
+      description: "Custom structure from RCSB",
+      category: "Molecular",
+      labels: [],
+    } as any);
+    navigate("#/viewer");
+  };
+
   // ── Style change ────────────────────────────────────────────────────────────────────
   const handleStyleChange = useCallback(
     (style: RenderStyle) => {
@@ -328,6 +426,8 @@ export default function App() {
       clearLabels(viewerInstanceRef.current);
     }
   }, [showLabels, selectedStructure, addLabelsToViewer, clearLabels]);
+
+  // 2D panel resets when structure changes (handled in loadStructure callback)
 
   // ── Scroll chat to bottom ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -677,6 +777,8 @@ export default function App() {
               </Button>
             </>
           )}
+          {/* Add Structure */}
+          <AddStructureModal onAdd={handleMyStructureAdd} />
           {/* Smart Board toggle */}
           <Button
             variant={isSmartBoard ? "default" : "ghost"}
@@ -845,6 +947,75 @@ export default function App() {
                   )}
                 </div>
               </ScrollArea>
+
+              {/* ── My Structures ── */}
+              {myStructures.length > 0 && (
+                <div className="border-t border-border">
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-wider"
+                      style={{ color: "oklch(0.65 0.1 145)" }}
+                    >
+                      My Structures
+                    </p>
+                    <span className="text-[9px] text-muted-foreground">
+                      {myStructures.length}
+                    </span>
+                  </div>
+                  <ScrollArea className="max-h-44">
+                    <div className="px-2 pb-2 flex flex-col gap-1">
+                      {myStructures.map((ms, i) => (
+                        <div
+                          key={ms.id}
+                          className="flex items-center gap-2 rounded-lg border border-border px-2 py-1.5 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
+                          data-ocid={`my_structures.item.${i + 1}`}
+                        >
+                          {ms.imageDataUrl ? (
+                            <img
+                              src={ms.imageDataUrl}
+                              alt=""
+                              className="w-7 h-7 rounded object-cover shrink-0 border border-border"
+                            />
+                          ) : (
+                            <div
+                              className="w-7 h-7 rounded flex items-center justify-center shrink-0 border border-border"
+                              style={{
+                                background: "oklch(0.73 0.18 192 / 0.1)",
+                              }}
+                            >
+                              <Plus
+                                className="w-3.5 h-3.5"
+                                style={{ color: "oklch(0.73 0.18 192 / 0.5)" }}
+                              />
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            className="flex-1 min-w-0 text-left"
+                            onClick={() => handleMyStructureLoad(ms)}
+                          >
+                            <p className="text-[10px] font-semibold truncate text-foreground">
+                              {ms.name}
+                            </p>
+                            <p className="text-[9px] font-mono text-muted-foreground">
+                              {ms.pdbId}
+                            </p>
+                          </button>
+                          <button
+                            type="button"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                            onClick={() => handleMyStructureDelete(ms.id)}
+                            data-ocid={`my_structures.delete_button.${i + 1}`}
+                            title="Remove"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
             </aside>
 
             {/* ── Main viewer ── */}
@@ -940,6 +1111,33 @@ export default function App() {
                     </Button>
                   </div>
                 )}
+
+                {/* 3D / 2D mode switcher – always visible */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider mr-1">
+                    View:
+                  </span>
+                  <div className="flex rounded-md overflow-hidden border border-border">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-8 px-4 text-sm font-semibold rounded-none border-r border-border ${!show2DPanel ? "bg-blue-600 text-white hover:bg-blue-700" : "text-muted-foreground hover:text-foreground"}`}
+                      onClick={() => setShow2DPanel(false)}
+                      data-ocid="threed.mode"
+                    >
+                      3D
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-8 px-4 text-sm font-semibold rounded-none ${show2DPanel ? "bg-blue-600 text-white hover:bg-blue-700" : "text-muted-foreground hover:text-foreground"}`}
+                      onClick={() => setShow2DPanel(true)}
+                      data-ocid="twod.mode"
+                    >
+                      2D
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               {/* 3D viewer area – or anatomy diagram */}
@@ -1039,6 +1237,14 @@ export default function App() {
                     </AnimatePresence>
                   </div>
 
+                  {/* 2D Panel */}
+                  {show2DPanel && selectedStructure && (
+                    <TwoDPanel
+                      structureName={selectedStructure.name}
+                      onClose={() => setShow2DPanel(false)}
+                    />
+                  )}
+
                   {/* Details panel */}
                   <aside
                     className="w-56 shrink-0 border-l border-border flex flex-col"
@@ -1113,8 +1319,6 @@ export default function App() {
               )}
             </main>
           </div>
-
-          {/* ── Footer ── */}
           <footer
             className="shrink-0 border-t border-border py-2 text-center text-[10px] text-muted-foreground"
             style={{ background: "oklch(var(--nav))" }}

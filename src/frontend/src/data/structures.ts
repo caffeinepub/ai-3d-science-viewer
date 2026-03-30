@@ -27,7 +27,8 @@ export type Category =
   | "Antibodies"
   | "Structural"
   | "Hormones"
-  | "Anatomy";
+  | "Anatomy"
+  | "Plants";
 
 export interface Structure {
   pdbId: string;
@@ -37,6 +38,7 @@ export interface Structure {
 }
 
 export const ANATOMY_ID = "HUMAN_ANATOMY";
+export const PLANT_CELL_ID = "PLANT_CELL";
 
 // ─── Label Definitions ────────────────────────────────────────────────────────
 export const LABEL_DEFS: Record<
@@ -314,6 +316,13 @@ export const STRUCTURES: Structure[] = [
     name: "Human Body",
     description: "Full skeletal & organ map with labels",
     category: "Anatomy",
+  },
+  // Plants
+  {
+    pdbId: PLANT_CELL_ID,
+    name: "Plant Cell",
+    description: "Interactive 3D plant cell with all organelles labeled",
+    category: "Plants",
   },
   // DNA & RNA
   {
@@ -750,6 +759,17 @@ export const STRUCTURE_FACTS: Record<
       "First enzyme structure solved by X-ray crystallography.",
       "Found in tears, saliva, and breast milk as part of innate immunity.",
       "Catalytic mechanism involves Asp52 and Glu35 residues.",
+    ],
+  },
+  PLANT_CELL: {
+    year: "N/A",
+    weight: "N/A",
+    function:
+      "Interactive 3D model of a plant cell showing all major organelles with labels and descriptions.",
+    facts: [
+      "Plant cells have a rigid cell wall made of cellulose, giving them their box-like shape.",
+      "Chloroplasts convert sunlight into glucose via photosynthesis — unique to plant cells.",
+      "The central vacuole can occupy up to 90% of a mature plant cell\u0027s volume.",
     ],
   },
   HUMAN_ANATOMY: {

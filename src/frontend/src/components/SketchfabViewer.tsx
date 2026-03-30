@@ -1,0 +1,2 @@
+// Sketchfab integration removed
+export {};

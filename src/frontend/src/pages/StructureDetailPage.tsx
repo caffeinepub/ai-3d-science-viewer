@@ -1,9 +1,11 @@
 import HumanAnatomyViewer from "@/components/HumanAnatomyViewer";
+import PlantCellViewer from "@/components/PlantCellViewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ANATOMY_ID,
   LABEL_DEFS,
+  PLANT_CELL_ID,
   type RenderStyle,
   STRUCTURES,
   STYLE_COLORS,
@@ -40,10 +42,11 @@ export default function StructureDetailPage({
   );
   const facts = getStructureFacts(pdbId);
   const isAnatomy = pdbId === ANATOMY_ID;
+  const isPlantCell = pdbId === PLANT_CELL_ID;
 
   const viewerContainerRef = useRef<HTMLDivElement>(null);
   const viewerInstanceRef = useRef<any>(null);
-  const [isLoading, setIsLoading] = useState(!isAnatomy);
+  const [isLoading, setIsLoading] = useState(!isAnatomy && !isPlantCell);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [renderStyle, setRenderStyle] = useState<RenderStyle>("cartoon");
   const [showLabels, setShowLabels] = useState(false);
@@ -103,7 +106,7 @@ export default function StructureDetailPage({
   // Load PDB on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally only re-runs on pdbId change
   useEffect(() => {
-    if (isAnatomy || !viewerContainerRef.current) return;
+    if (isAnatomy || isPlantCell || !viewerContainerRef.current) return;
     let cancelled = false;
     setIsLoading(true);
     setLoadError(null);
@@ -164,7 +167,7 @@ export default function StructureDetailPage({
 
   // Labels toggle
   useEffect(() => {
-    if (!viewerInstanceRef.current || isAnatomy) return;
+    if (!viewerInstanceRef.current || isAnatomy || isPlantCell) return;
     if (showLabels) {
       const model = viewerInstanceRef.current.getModel();
       if (model)
@@ -179,7 +182,7 @@ export default function StructureDetailPage({
       } catch (_) {}
       viewerInstanceRef.current.render();
     }
-  }, [showLabels, structure, addLabelsToViewer, isAnatomy]);
+  }, [showLabels, structure, addLabelsToViewer, isAnatomy, isPlantCell]);
 
   const backRoute = getCategoryRoute(structure?.category ?? "Anatomy");
   const labelDefs =
@@ -231,7 +234,7 @@ export default function StructureDetailPage({
               {structure.category}
             </Badge>
           )}
-          {!isAnatomy && (
+          {!isAnatomy && !isPlantCell && (
             <Badge className="font-mono text-xs shrink-0">{pdbId}</Badge>
           )}
         </div>
@@ -248,6 +251,8 @@ export default function StructureDetailPage({
       >
         {isAnatomy ? (
           <HumanAnatomyViewer />
+        ) : isPlantCell ? (
+          <PlantCellViewer />
         ) : (
           <>
             <div
@@ -295,7 +300,7 @@ export default function StructureDetailPage({
       </div>
 
       {/* Controls bar */}
-      {!isAnatomy && (
+      {!isAnatomy && !isPlantCell && (
         <div
           className="border-b border-border px-4 py-2 flex items-center gap-2 flex-wrap"
           style={{ background: "oklch(var(--nav))" }}
@@ -443,7 +448,7 @@ export default function StructureDetailPage({
         </div>
 
         {/* Label definitions (when applicable) */}
-        {!isAnatomy && (
+        {!isAnatomy && !isPlantCell && (
           <div
             className="rounded-xl border p-5 mt-4"
             style={{

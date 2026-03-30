@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PLANT_CELL_ID } from "@/data/structures";
 import { FlaskConical, Leaf } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -8,6 +9,14 @@ interface PlantsPageProps {
 }
 
 const PLANT_STRUCTURES = [
+  {
+    pdbId: PLANT_CELL_ID,
+    name: "Plant Cell (3D)",
+    description:
+      "Interactive 3D cross-section of a plant cell with all organelles: nucleus, chloroplasts, mitochondria, Golgi apparatus, ER, vacuole, ribosomes, cell wall, and more.",
+    part: "Cell",
+    emoji: "🌿",
+  },
   {
     pdbId: "1CRN",
     name: "Crambin",
